@@ -1,0 +1,13 @@
+[package]
+name = "dialoguemaker/dialogue"
+version = "0.1.0-patch-1"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+repository = "https://github.com/DialogueMaker/dialogue"
+authors = ["Christian Toney <christian.toney@beastslash.com>"]
+include = ["src", "src/**/*.lua", "wally.toml", "default.project.json"]
+exclude = ["**"]
+
+[dependencies]
+dialogue-types = "dialoguemaker/dialogue-types@0.1.0-patch-2"
+effect-types = "dialoguemaker/effect-types@0.1.0-patch-3"
