@@ -1,7 +1,8 @@
 --!strict
 
-local IDialogue = require(script.Parent["dialogue-types"]);
-local IEffect = require(script.Parent["effect-types"]);
+local packages = script.Parent.roblox_packages;
+local IDialogue = require(packages.dialogue_types);
+local IEffect = require(packages.effect_types);
 
 type Dialogue = IDialogue.Dialogue;
 type DialogueSettings = IDialogue.DialogueSettings;
@@ -12,7 +13,9 @@ type OptionalDialogueSettings = IDialogue.OptionalDialogueSettings;
 
 export type ConstructorProperties = {
   getContent: GetContentFunction;
-  runAction: (self: Dialogue, actionID: number) -> ();
+  runInitializationAction: (self: Dialogue) -> ();
+  runCompletionAction: (self: Dialogue, requestedDialogue: Dialogue?) -> ();
+  runTimeoutAction: (self: Dialogue) -> ();
   verifyCondition: (self: Dialogue) -> boolean;
   settings: OptionalDialogueSettings?;
 }
@@ -25,18 +28,20 @@ local Dialogue = {
       shouldShowResponseWhileTyping = false;
     };
     timeout = {	
-      seconds = nil; 
-      shouldWaitForResponse = true; 
+      seconds = nil;
     };
   } :: DialogueSettings;
 };
 
 --[[
-  Creates a new dialogue object.
+  Creates a new Dialogue object.
 ]]
 function Dialogue.new(properties: ConstructorProperties, moduleScript: ModuleScript): Dialogue
   
   local settings: DialogueSettings = {
+    theme = {
+      moduleScript = if properties.settings and properties.settings.theme then properties.settings.theme.moduleScript else nil;
+    };
     typewriter = {
       characterDelaySeconds = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.characterDelaySeconds ~= nil then properties.settings.typewriter.characterDelaySeconds else Dialogue.defaultSettings.typewriter.characterDelaySeconds; 
       canPlayerSkipDelay = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.canPlayerSkipDelay ~= nil then properties.settings.typewriter.canPlayerSkipDelay else Dialogue.defaultSettings.typewriter.canPlayerSkipDelay; 
@@ -44,7 +49,6 @@ function Dialogue.new(properties: ConstructorProperties, moduleScript: ModuleScr
     };
     timeout = {	
       seconds = if properties.settings and properties.settings.timeout and properties.settings.timeout.seconds ~= nil then properties.settings.timeout.seconds else Dialogue.defaultSettings.timeout.seconds; 
-      shouldWaitForResponse = if properties.settings and properties.settings.timeout and properties.settings.timeout.shouldWaitForResponse ~= nil then properties.settings.timeout.shouldWaitForResponse else Dialogue.defaultSettings.timeout.shouldWaitForResponse; 
     };
   };
 
@@ -81,6 +85,42 @@ function Dialogue.new(properties: ConstructorProperties, moduleScript: ModuleScr
 
   end;
 
+  local function findNextVerifiedDialogue(self: Dialogue): Dialogue?
+
+    if self.type == "Redirect" then
+
+      local redirectObjectValue = moduleScript:FindFirstChild("Redirect");
+      assert(redirectObjectValue and redirectObjectValue:IsA("ObjectValue"), "[Dialogue Maker] Redirect object value not found.");
+
+      local redirectModuleScript = redirectObjectValue.Value;
+      assert(redirectModuleScript and redirectModuleScript:IsA("ModuleScript"), "[Dialogue Maker] Redirect object value is not a ModuleScript.");
+
+      local redirectDialogue = require(redirectModuleScript) :: Dialogue;
+      if redirectDialogue:verifyCondition() then
+
+        return redirectDialogue;
+
+      end;
+
+    else 
+
+      local children = self:getChildren();
+      for _, child in children do
+
+        if child:verifyCondition() then
+
+          return child;
+
+        end
+
+      end
+
+    end;
+
+    return nil;
+
+  end;
+
   local function setSettings(self: Dialogue, newSettings: DialogueSettings): ()
 
     settings = newSettings;
@@ -97,23 +137,14 @@ function Dialogue.new(properties: ConstructorProperties, moduleScript: ModuleScr
     getContent = properties.getContent;
     getChildren = getChildren;
     getSettings = getSettings;
-    runAction = properties.runAction;
+    runCompletionAction = properties.runCompletionAction;
+    runInitializationAction = properties.runInitializationAction;
+    runTimeoutAction = properties.runTimeoutAction;
+    findNextVerifiedDialogue = findNextVerifiedDialogue;
     setSettings = setSettings;
     verifyCondition = properties.verifyCondition;
     SettingsChanged = settingsChangedEvent.Event;
   };
-
-  if dialogue.type == "Redirect" then
-
-    local redirectObjectValue = moduleScript:FindFirstChild("Redirect");
-    assert(redirectObjectValue and redirectObjectValue:IsA("ObjectValue"), "[Dialogue Maker] Redirect object value not found.");
-
-    local redirectModuleScript = redirectObjectValue.Value;
-    assert(redirectModuleScript and redirectModuleScript:IsA("ModuleScript"), "[Dialogue Maker] Redirect object value is not a ModuleScript.");
-
-    dialogue.redirectModuleScript = redirectModuleScript;
-
-  end;
 
   return dialogue;
 
