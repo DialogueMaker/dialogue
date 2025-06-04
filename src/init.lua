@@ -1,22 +1,24 @@
 --!strict
 
 local packages = script.Parent.roblox_packages;
-local IDialogue = require(packages.dialogue_types);
-local IEffect = require(packages.effect_types);
+local DialogueMakerTypes = require(packages.dialogue_maker_types);
 
-type Dialogue = IDialogue.Dialogue;
-type DialogueSettings = IDialogue.DialogueSettings;
-type Effect = IEffect.Effect;
-type GetContentFunction = IDialogue.GetContentFunction;
-type Page = IEffect.Page;
-type OptionalDialogueSettings = IDialogue.OptionalDialogueSettings;
+type Client = Dialogue
+type Dialogue = DialogueMakerTypes.Dialogue;
+type DialogueSettings = DialogueMakerTypes.DialogueSettings;
+type Effect = DialogueMakerTypes.Effect;
+type GetContentFunction = DialogueMakerTypes.GetContentFunction;
+type RunInitializationActionFunction = DialogueMakerTypes.RunInitializationActionFunction;
+type RunCompletionActionFunction = DialogueMakerTypes.RunCompletionActionFunction;
+type VerifyConditionFunction = DialogueMakerTypes.VerifyConditionFunction;
+type Page = DialogueMakerTypes.Page;
+type OptionalDialogueSettings = DialogueMakerTypes.OptionalDialogueSettings;
 
 export type ConstructorProperties = {
   getContent: GetContentFunction;
-  runInitializationAction: (self: Dialogue) -> ();
-  runCompletionAction: (self: Dialogue, requestedDialogue: Dialogue?) -> ();
-  runTimeoutAction: (self: Dialogue) -> ();
-  verifyCondition: (self: Dialogue) -> boolean;
+  runInitializationAction: RunInitializationActionFunction;
+  runCompletionAction: RunCompletionActionFunction;
+  verifyCondition: VerifyConditionFunction;
   settings: OptionalDialogueSettings?;
 }
 
@@ -26,9 +28,6 @@ local Dialogue = {
       characterDelaySeconds = 0.025; 
       canPlayerSkipDelay = true;
       shouldShowResponseWhileTyping = false;
-    };
-    timeout = {	
-      seconds = nil;
     };
   } :: DialogueSettings;
 };
@@ -46,9 +45,6 @@ function Dialogue.new(properties: ConstructorProperties, moduleScript: ModuleScr
       characterDelaySeconds = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.characterDelaySeconds ~= nil then properties.settings.typewriter.characterDelaySeconds else Dialogue.defaultSettings.typewriter.characterDelaySeconds; 
       canPlayerSkipDelay = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.canPlayerSkipDelay ~= nil then properties.settings.typewriter.canPlayerSkipDelay else Dialogue.defaultSettings.typewriter.canPlayerSkipDelay; 
       shouldShowResponseWhileTyping = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.shouldShowResponseWhileTyping ~= nil then properties.settings.typewriter.shouldShowResponseWhileTyping else Dialogue.defaultSettings.typewriter.shouldShowResponseWhileTyping;
-    };
-    timeout = {	
-      seconds = if properties.settings and properties.settings.timeout and properties.settings.timeout.seconds ~= nil then properties.settings.timeout.seconds else Dialogue.defaultSettings.timeout.seconds; 
     };
   };
 
@@ -139,7 +135,6 @@ function Dialogue.new(properties: ConstructorProperties, moduleScript: ModuleScr
     getSettings = getSettings;
     runCompletionAction = properties.runCompletionAction;
     runInitializationAction = properties.runInitializationAction;
-    runTimeoutAction = properties.runTimeoutAction;
     findNextVerifiedDialogue = findNextVerifiedDialogue;
     setSettings = setSettings;
     verifyCondition = properties.verifyCondition;
