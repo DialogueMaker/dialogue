@@ -1,9 +1,9 @@
 --!strict
 
 local packages = script.Parent.roblox_packages;
-local DialogueMakerTypes = require(packages.dialogue_maker_types);
+local DialogueMakerTypes = require(packages.DialogueMakerTypes);
 
-type Client = Dialogue
+type Client = DialogueMakerTypes.Client;
 type Dialogue = DialogueMakerTypes.Dialogue;
 type DialogueSettings = DialogueMakerTypes.DialogueSettings;
 type Effect = DialogueMakerTypes.Effect;
@@ -15,15 +15,25 @@ type Page = DialogueMakerTypes.Page;
 type OptionalDialogueSettings = DialogueMakerTypes.OptionalDialogueSettings;
 
 export type ConstructorProperties = {
-  getContent: GetContentFunction;
+  content: (string | Effect | Page)?;
+  getContent: GetContentFunction?;
+  children: {Dialogue}?;
+  getChildren: ((self: Dialogue) -> {Dialogue})?;
   runInitializationAction: RunInitializationActionFunction;
   runCompletionAction: RunCompletionActionFunction;
   verifyCondition: VerifyConditionFunction;
   settings: OptionalDialogueSettings?;
+  type: "Message" | "Response" | "Redirect";
 }
 
 local Dialogue = {
   defaultSettings = {
+    theme = {
+      component = nil;
+    };
+    speaker = {
+      name = nil;
+    };
     typewriter = {
       characterDelaySeconds = 0.025; 
       canPlayerSkipDelay = true;
@@ -35,11 +45,18 @@ local Dialogue = {
 --[[
   Creates a new Dialogue object.
 ]]
-function Dialogue.new(properties: ConstructorProperties, moduleScript: ModuleScript): Dialogue
+function Dialogue.new(properties: ConstructorProperties): Dialogue
   
+  assert(properties.type == "Message" or properties.type == "Response" or properties.type == "Redirect", "[Dialogue Maker] ModuleScript must have a DialogueType attribute set to either Message, Response, or Redirect.");
+  assert(properties.children or properties.getChildren, "[Dialogue Maker] Please provide a children property or a getChildren function.");
+  assert(properties.content or properties.getContent, "[Dialogue Maker] Please provide a content property or a getContent function.");
+
   local settings: DialogueSettings = {
     theme = {
-      moduleScript = if properties.settings and properties.settings.theme then properties.settings.theme.moduleScript else nil;
+      component = if properties.settings and properties.settings.theme then properties.settings.theme.component else Dialogue.defaultSettings.theme.component;
+    };
+    speaker = {
+      name = if properties.settings and properties.settings.speaker and properties.settings.speaker.name ~= nil then properties.settings.speaker.name else Dialogue.defaultSettings.speaker.name;
     };
     typewriter = {
       characterDelaySeconds = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.characterDelaySeconds ~= nil then properties.settings.typewriter.characterDelaySeconds else Dialogue.defaultSettings.typewriter.characterDelaySeconds; 
@@ -48,100 +65,153 @@ function Dialogue.new(properties: ConstructorProperties, moduleScript: ModuleScr
     };
   };
 
-  local settingsChangedEvent = Instance.new("BindableEvent");
-
   local function getChildren(self: Dialogue): {Dialogue}
 
-    local children: {Dialogue} = {};
-    for _, possibleDialogue in moduleScript:GetChildren() do
+    if properties.children then
 
-      if possibleDialogue:IsA("ModuleScript") and tonumber(possibleDialogue.Name) then
+      return properties.children;
 
-        local response = require(possibleDialogue) :: Dialogue;
-        table.insert(children, response);
+    elseif properties.getChildren then
 
-      end
+      return properties.getChildren(self);
 
-    end
+    end;
 
-    -- Sort responses because :GetChildren() doesn't guarantee it
-    table.sort(children, function(dialogue1, dialogue2)
-
-      return dialogue1.moduleScript.Name < dialogue2.moduleScript.Name;
-
-    end);
-
-    return children;
-
-  end;
-
-  local function getSettings(self: Dialogue): DialogueSettings
-
-    return table.clone(settings);
+    error("[Dialogue Maker] Dialogue is missing a children property or a getChildren function.");
 
   end;
 
   local function findNextVerifiedDialogue(self: Dialogue): Dialogue?
 
-    if self.type == "Redirect" then
+    for _, child in self:getChildren() do
+      
+      if child:verifyCondition() then
 
-      local redirectObjectValue = moduleScript:FindFirstChild("Redirect");
-      assert(redirectObjectValue and redirectObjectValue:IsA("ObjectValue"), "[Dialogue Maker] Redirect object value not found.");
-
-      local redirectModuleScript = redirectObjectValue.Value;
-      assert(redirectModuleScript and redirectModuleScript:IsA("ModuleScript"), "[Dialogue Maker] Redirect object value is not a ModuleScript.");
-
-      local redirectDialogue = require(redirectModuleScript) :: Dialogue;
-      if redirectDialogue:verifyCondition() then
-
-        return redirectDialogue;
-
-      end;
-
-    else 
-
-      local children = self:getChildren();
-      for _, child in children do
-
-        if child:verifyCondition() then
-
-          return child;
-
-        end
+        return child;
 
       end
 
-    end;
+    end
 
     return nil;
 
   end;
 
-  local function setSettings(self: Dialogue, newSettings: DialogueSettings): ()
+  local function runInitializationAction(self: Dialogue, client: Client): ()
 
-    settings = newSettings;
-    settingsChangedEvent:Fire();
+    if properties.runInitializationAction then
+
+      properties.runInitializationAction(self, client);
+
+    end;
 
   end;
 
-  local type = moduleScript:GetAttribute("DialogueType");
-  assert(type == "Message" or type == "Response" or type == "Redirect", "[Dialogue Maker] ModuleScript must have a DialogueType attribute set to either Message, Response, or Redirect.");
+  local function runCompletionAction(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
+
+    if properties.runCompletionAction then
+
+      properties.runCompletionAction(self, client, requestedDialogue);
+
+    else
+
+      local nextDialogue = requestedDialogue or self:findNextVerifiedDialogue();
+      client:setDialogue(nextDialogue);
+
+    end;
+
+  end;
+
+  local function getContent(self: Dialogue): Page
+    
+    if properties.getContent then
+
+      return properties.getContent(self);
+
+    elseif properties.content then
+
+      if typeof(properties.content) == "string" or (properties.content :: Effect).type == "Effect" then
+
+        return {properties.content :: string | Effect};
+
+      else
+
+        return properties.content;
+
+      end;
+
+    end;
+
+    error("[Dialogue Maker] Dialogue is missing a content property or a getContent function.");
+
+  end;
+
+  local function verifyCondition(self: Dialogue): boolean
+
+    if properties.verifyCondition then
+
+      return properties.verifyCondition(self);
+
+    end;
+
+    return true;
+
+  end;
 
   local dialogue: Dialogue = {
-    type = type;
-    moduleScript = moduleScript;
-    getContent = properties.getContent;
+    type = properties.type;
+    settings = settings;
+    getContent = getContent;
     getChildren = getChildren;
-    getSettings = getSettings;
-    runCompletionAction = properties.runCompletionAction;
-    runInitializationAction = properties.runInitializationAction;
+    runCompletionAction = runCompletionAction;
+    runInitializationAction = runInitializationAction;
     findNextVerifiedDialogue = findNextVerifiedDialogue;
-    setSettings = setSettings;
-    verifyCondition = properties.verifyCondition;
-    SettingsChanged = settingsChangedEvent.Event;
+    verifyCondition = verifyCondition;
   };
 
   return dialogue;
+
+end;
+
+--[[
+  Returns a list of Dialogue objects from the given instance.
+  The instance should contain ModuleScripts with the "DialogueScript" tag.
+]]
+function Dialogue.listFromInstance(instance: Instance): {Dialogue}
+
+  local dialogueInstances = {};
+
+  for _, child in script:GetChildren() do
+
+    local isDialogueScript = child:IsA("ModuleScript") and child:HasTag("DialogueScript");
+    local isRedirect = child:IsA("ObjectValue") and child:HasTag("DialogueRedirectValue") and child.Value and child.Value:IsA("ModuleScript") and child.Value:HasTag("DialogueScript");
+    if not isDialogueScript and not isRedirect then
+
+      continue;
+
+    end;
+
+    table.insert(dialogueInstances, child);
+
+  end;
+
+  table.sort(dialogueInstances, function(instance1, instance2)
+
+    return instance1.Name < instance2.Name;
+
+  end);
+
+  local dialogueList = {};
+
+  for _, dialogueInstance in dialogueInstances do
+
+    local dialogueScript: ModuleScript = if dialogueInstance:IsA("ModuleScript") then dialogueInstance else dialogueInstance.Value;
+    local dialogue = require(dialogueScript) :: Dialogue;
+    table.insert(dialogueList, dialogue);
+
+  end;
+
+  return dialogueList;
 
 end;
 
