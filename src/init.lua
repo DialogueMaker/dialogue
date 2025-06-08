@@ -4,6 +4,7 @@ local packages = script.Parent.roblox_packages;
 local DialogueMakerTypes = require(packages.DialogueMakerTypes);
 
 type Client = DialogueMakerTypes.Client;
+type Conversation = DialogueMakerTypes.Conversation;
 type Dialogue = DialogueMakerTypes.Dialogue;
 type DialogueSettings = DialogueMakerTypes.DialogueSettings;
 type Effect = DialogueMakerTypes.Effect;
@@ -13,18 +14,8 @@ type RunCompletionActionFunction = DialogueMakerTypes.RunCompletionActionFunctio
 type VerifyConditionFunction = DialogueMakerTypes.VerifyConditionFunction;
 type Page = DialogueMakerTypes.Page;
 type OptionalDialogueSettings = DialogueMakerTypes.OptionalDialogueSettings;
-
-export type ConstructorProperties = {
-  content: (string | Effect | Page)?;
-  getContent: GetContentFunction?;
-  children: {Dialogue}?;
-  getChildren: ((self: Dialogue) -> {Dialogue})?;
-  runInitializationAction: RunInitializationActionFunction;
-  runCompletionAction: RunCompletionActionFunction;
-  verifyCondition: VerifyConditionFunction;
-  settings: OptionalDialogueSettings?;
-  type: "Message" | "Response" | "Redirect";
-}
+type DialogueConstructorPropertiesWithType = DialogueMakerTypes.DialogueConstructorPropertiesWithType;
+type OptionalDialogueConstructorProperties = DialogueMakerTypes.OptionalDialogueConstructorProperties;
 
 local Dialogue = {
   defaultSettings = {
@@ -45,9 +36,8 @@ local Dialogue = {
 --[[
   Creates a new Dialogue object.
 ]]
-function Dialogue.new(properties: ConstructorProperties): Dialogue
+function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialogue
   
-  assert(properties.type == "Message" or properties.type == "Response" or properties.type == "Redirect", "[Dialogue Maker] ModuleScript must have a DialogueType attribute set to either Message, Response, or Redirect.");
   assert(properties.children or properties.getChildren, "[Dialogue Maker] Please provide a children property or a getChildren function.");
   assert(properties.content or properties.getContent, "[Dialogue Maker] Please provide a content property or a getContent function.");
 
@@ -65,11 +55,32 @@ function Dialogue.new(properties: ConstructorProperties): Dialogue
     };
   };
 
+  local children = properties.children;
+
+  local function clone(self: Dialogue, newProperties: OptionalDialogueConstructorProperties?): Dialogue
+
+    local clonedProperties: DialogueConstructorPropertiesWithType = if newProperties then {
+      type = newProperties.type or properties.type;
+      settings = newProperties.settings or properties.settings;
+      content = newProperties.content or properties.content;
+      getContent = newProperties.getContent or properties.getContent;
+      children = newProperties.children or properties.children;
+      getChildren = newProperties.getChildren or properties.getChildren;
+      runInitializationAction = newProperties.runInitializationAction or properties.runInitializationAction;
+      runCompletionAction = newProperties.runCompletionAction or properties.runCompletionAction;
+      verifyCondition = newProperties.verifyCondition or properties.verifyCondition;
+      parent = newProperties.parent or properties.parent;
+    } else properties;
+
+    return Dialogue.new(clonedProperties);
+
+  end;
+
   local function getChildren(self: Dialogue): {Dialogue}
 
-    if properties.children then
+    if children then
 
-      return properties.children;
+      return children;
 
     elseif properties.getChildren then
 
@@ -115,8 +126,24 @@ function Dialogue.new(properties: ConstructorProperties): Dialogue
 
     else
 
-      local nextDialogue = requestedDialogue or self:findNextVerifiedDialogue();
-      client:setDialogue(nextDialogue);
+      self:runDefaultCompletionAction(client, requestedDialogue);
+
+    end;
+
+  end;
+
+  local function runDefaultCompletionAction(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
+
+    local nextDialogue = requestedDialogue or self:findNextVerifiedDialogue();
+    if nextDialogue then
+
+      client:clone({
+        dialogue = nextDialogue;
+      });
+
+    else
+
+      client:cleanup();
 
     end;
 
@@ -158,16 +185,58 @@ function Dialogue.new(properties: ConstructorProperties): Dialogue
 
   end;
 
+  local function getParent(self: Dialogue): Dialogue | Conversation
+
+    assert(properties.parent, "[Dialogue Maker] Dialogue is missing a parent property.");
+
+    return properties.parent;
+
+  end;
+
+  local function getConversation(self: Dialogue): Conversation
+
+    local parent = self:getParent();
+
+    while parent.type ~= "Conversation" do
+
+      parent = parent:getParent();
+
+    end;
+
+    return parent :: Conversation;
+
+  end;
+
   local dialogue: Dialogue = {
     type = properties.type;
     settings = settings;
+    clone = clone;
+    getConversation = getConversation;
     getContent = getContent;
     getChildren = getChildren;
+    getParent = getParent;
     runCompletionAction = runCompletionAction;
     runInitializationAction = runInitializationAction;
+    runDefaultCompletionAction = runDefaultCompletionAction;
     findNextVerifiedDialogue = findNextVerifiedDialogue;
     verifyCondition = verifyCondition;
   };
+
+  if children then
+
+    for index, childDialogue in children do
+
+      if childDialogue.parent ~= dialogue then
+
+        children[index] = childDialogue:clone({
+          parent = dialogue;
+        });
+
+      end;
+
+    end;
+
+  end;
 
   return dialogue;
 
