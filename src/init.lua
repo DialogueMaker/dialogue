@@ -41,20 +41,6 @@ function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialog
   assert(properties.children or properties.getChildren, "[Dialogue Maker] Please provide a children property or a getChildren function.");
   assert(properties.content or properties.getContent, "[Dialogue Maker] Please provide a content property or a getContent function.");
 
-  local settings: DialogueSettings = {
-    theme = {
-      component = if properties.settings and properties.settings.theme then properties.settings.theme.component else Dialogue.defaultSettings.theme.component;
-    };
-    speaker = {
-      name = if properties.settings and properties.settings.speaker and properties.settings.speaker.name ~= nil then properties.settings.speaker.name else Dialogue.defaultSettings.speaker.name;
-    };
-    typewriter = {
-      characterDelaySeconds = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.characterDelaySeconds ~= nil then properties.settings.typewriter.characterDelaySeconds else Dialogue.defaultSettings.typewriter.characterDelaySeconds; 
-      canPlayerSkipDelay = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.canPlayerSkipDelay ~= nil then properties.settings.typewriter.canPlayerSkipDelay else Dialogue.defaultSettings.typewriter.canPlayerSkipDelay; 
-      shouldShowResponseWhileTyping = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.shouldShowResponseWhileTyping ~= nil then properties.settings.typewriter.shouldShowResponseWhileTyping else Dialogue.defaultSettings.typewriter.shouldShowResponseWhileTyping;
-    };
-  };
-
   local children = properties.children;
 
   local function clone(self: Dialogue, newProperties: OptionalDialogueConstructorProperties?): Dialogue
@@ -105,6 +91,15 @@ function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialog
     end
 
     return nil;
+
+  end;
+
+  local function getNextVerifiedDialogue(self: Dialogue): Dialogue
+
+    local nextDialogue = self:findNextVerifiedDialogue();
+    assert(nextDialogue, "No verified child found in dialogue.");
+
+    return nextDialogue;
 
   end;
 
@@ -173,6 +168,14 @@ function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialog
 
   end;
 
+  local function getParent(self: Dialogue): Dialogue | Conversation
+
+    assert(self.parent, "[Dialogue Maker] Dialogue is missing a parent property.");
+
+    return self.parent;
+
+  end;
+
   local function verifyCondition(self: Dialogue): boolean
 
     if properties.verifyCondition then
@@ -182,14 +185,6 @@ function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialog
     end;
 
     return true;
-
-  end;
-
-  local function getParent(self: Dialogue): Dialogue | Conversation
-
-    assert(properties.parent, "[Dialogue Maker] Dialogue is missing a parent property.");
-
-    return properties.parent;
 
   end;
 
@@ -207,15 +202,31 @@ function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialog
 
   end;
 
+  local settings: DialogueSettings = {
+    theme = {
+      component = if properties.settings and properties.settings.theme then properties.settings.theme.component else Dialogue.defaultSettings.theme.component;
+    };
+    speaker = {
+      name = if properties.settings and properties.settings.speaker and properties.settings.speaker.name ~= nil then properties.settings.speaker.name else Dialogue.defaultSettings.speaker.name;
+    };
+    typewriter = {
+      characterDelaySeconds = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.characterDelaySeconds ~= nil then properties.settings.typewriter.characterDelaySeconds else Dialogue.defaultSettings.typewriter.characterDelaySeconds; 
+      canPlayerSkipDelay = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.canPlayerSkipDelay ~= nil then properties.settings.typewriter.canPlayerSkipDelay else Dialogue.defaultSettings.typewriter.canPlayerSkipDelay; 
+      shouldShowResponseWhileTyping = if properties.settings and properties.settings.typewriter and properties.settings.typewriter.shouldShowResponseWhileTyping ~= nil then properties.settings.typewriter.shouldShowResponseWhileTyping else Dialogue.defaultSettings.typewriter.shouldShowResponseWhileTyping;
+    };
+  };
+
   local dialogue: Dialogue = {
-    type = properties.type;
+    parent = properties.parent;
     settings = settings;
+    type = properties.type;
     clone = clone;
     getConversation = getConversation;
     getContent = getContent;
-    getChildren = getChildren;
     getParent = getParent;
+    getChildren = getChildren;
     runCompletionAction = runCompletionAction;
+    getNextVerifiedDialogue = getNextVerifiedDialogue;
     runInitializationAction = runInitializationAction;
     runDefaultCompletionAction = runDefaultCompletionAction;
     findNextVerifiedDialogue = findNextVerifiedDialogue;
