@@ -16,6 +16,8 @@ type Page = DialogueMakerTypes.Page;
 type OptionalDialogueSettings = DialogueMakerTypes.OptionalDialogueSettings;
 type DialogueConstructorPropertiesWithType = DialogueMakerTypes.DialogueConstructorPropertiesWithType;
 type OptionalDialogueConstructorProperties = DialogueMakerTypes.OptionalDialogueConstructorProperties;
+type DialogueConstructorContent = DialogueMakerTypes.DialogueConstructorContent;
+type DialogueConstructorChildren = DialogueMakerTypes.DialogueConstructorChildren;
 
 local Dialogue = {
   defaultSettings = {
@@ -36,45 +38,38 @@ local Dialogue = {
 --[[
   Creates a new Dialogue object.
 ]]
-function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialogue
-  
-  assert(properties.children or properties.getChildren, "[Dialogue Maker] Please provide a children property or a getChildren function.");
-  assert(properties.content or properties.getContent, "[Dialogue Maker] Please provide a content property or a getContent function.");
-
-  local children = properties.children;
+function Dialogue.new(content: DialogueConstructorContent?, properties: DialogueConstructorPropertiesWithType, children: DialogueConstructorChildren?): Dialogue
 
   local function clone(self: Dialogue, newProperties: OptionalDialogueConstructorProperties?): Dialogue
 
     local clonedProperties: DialogueConstructorPropertiesWithType = if newProperties then {
       type = newProperties.type or properties.type;
       settings = newProperties.settings or properties.settings;
-      content = newProperties.content or properties.content;
-      getContent = newProperties.getContent or properties.getContent;
-      children = newProperties.children or properties.children;
-      getChildren = newProperties.getChildren or properties.getChildren;
       runInitializationAction = newProperties.runInitializationAction or properties.runInitializationAction;
       runCompletionAction = newProperties.runCompletionAction or properties.runCompletionAction;
       verifyCondition = newProperties.verifyCondition or properties.verifyCondition;
       parent = newProperties.parent or properties.parent;
     } else properties;
 
-    return Dialogue.new(clonedProperties);
+    return Dialogue.new(content, clonedProperties, children);
 
   end;
 
   local function getChildren(self: Dialogue): {Dialogue}
 
-    if children then
+    if typeof(children) == "table" then
 
       return children;
 
-    elseif properties.getChildren then
+    elseif typeof(children) == "function" then
 
-      return properties.getChildren(self);
+      return children(self);
 
-    end;
+    else
 
-    error("[Dialogue Maker] Dialogue is missing a children property or a getChildren function.");
+      return {};
+
+    end
 
   end;
 
@@ -146,25 +141,23 @@ function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialog
 
   local function getContent(self: Dialogue): Page
     
-    if properties.getContent then
+    if content then
 
-      return properties.getContent(self);
+      if typeof(content) == "function" then
 
-    elseif properties.content then
+        return content(self);
 
-      if typeof(properties.content) == "string" or (properties.content :: Effect).type == "Effect" then
+      elseif typeof(content) == "string" or (content :: Effect).type == "Effect" then
 
-        return {properties.content :: string | Effect};
+        return {content :: string | Effect};
 
-      else
+      end
 
-        return properties.content;
-
-      end;
+      return content;
 
     end;
 
-    error("[Dialogue Maker] Dialogue is missing a content property or a getContent function.");
+    return {};
 
   end;
 
@@ -233,7 +226,7 @@ function Dialogue.new(properties: DialogueConstructorPropertiesWithType): Dialog
     verifyCondition = verifyCondition;
   };
 
-  if children then
+  if children and typeof(children) == "table" then
 
     for index, childDialogue in children do
 
