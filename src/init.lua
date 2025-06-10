@@ -108,21 +108,31 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
   end;
 
-  local function runCompletionAction(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
+  local function runCompletionAction(self: Dialogue, client: Client): ()
 
     if properties.runCompletionAction then
 
-      properties.runCompletionAction(self, client, requestedDialogue);
-
-    else
-
-      self:runDefaultCompletionAction(client, requestedDialogue);
+      properties.runCompletionAction(self, client);
 
     end;
 
   end;
 
-  local function runDefaultCompletionAction(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
+  local function runCleanupAction(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
+
+    if properties.runCleanupAction then
+
+      properties.runCleanupAction(self, client, requestedDialogue);
+
+    else
+
+      self:runDefaultCleanupAction(client, requestedDialogue);
+
+    end;
+
+  end;
+
+  local function runDefaultCleanupAction(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
 
     local nextDialogue = requestedDialogue or self:findNextVerifiedDialogue();
     if nextDialogue then
@@ -221,7 +231,8 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
     runCompletionAction = runCompletionAction;
     getNextVerifiedDialogue = getNextVerifiedDialogue;
     runInitializationAction = runInitializationAction;
-    runDefaultCompletionAction = runDefaultCompletionAction;
+    runCleanupAction = runCleanupAction;
+    runDefaultCleanupAction = runDefaultCleanupAction;
     findNextVerifiedDialogue = findNextVerifiedDialogue;
     verifyCondition = verifyCondition;
   };
