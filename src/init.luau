@@ -28,9 +28,9 @@ local Dialogue = {
       name = nil;
     };
     typewriter = {
-      characterDelaySeconds = 0.025; 
-      canPlayerSkipDelay = true;
-      shouldShowResponseWhileTyping = false;
+      characterDelaySeconds = nil; 
+      canPlayerSkipDelay = nil;
+      shouldShowResponseWhileTyping = nil;
     };
   } :: DialogueSettings;
 };
@@ -46,6 +46,7 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
       type = newProperties.type or properties.type;
       settings = newProperties.settings or properties.settings;
       runInitializationAction = newProperties.runInitializationAction or properties.runInitializationAction;
+      runCleanupAction = newProperties.runCleanupAction or properties.runCleanupAction;
       runCompletionAction = newProperties.runCompletionAction or properties.runCompletionAction;
       verifyCondition = newProperties.verifyCondition or properties.verifyCondition;
       parent = newProperties.parent or properties.parent;
