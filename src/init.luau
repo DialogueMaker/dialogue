@@ -40,7 +40,7 @@ local Dialogue = {
 ]]
 function Dialogue.new(content: DialogueConstructorContent?, properties: DialogueConstructorPropertiesWithType, children: DialogueConstructorChildren?): Dialogue
 
-  local function clone(self: Dialogue, newProperties: OptionalDialogueConstructorProperties?): Dialogue
+  local clone = function(self: Dialogue, newProperties: OptionalDialogueConstructorProperties?): Dialogue
 
     local clonedProperties: DialogueConstructorPropertiesWithType = if newProperties then {
       type = newProperties.type or properties.type;
@@ -56,7 +56,7 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
   end;
 
-  local function getChildren(self: Dialogue): {Dialogue}
+  local getChildren = function(self: Dialogue): {Dialogue}
 
     if typeof(children) == "table" then
 
@@ -74,7 +74,7 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
   end;
 
-  local function findNextVerifiedDialogue(self: Dialogue): Dialogue?
+  local findNextVerifiedDialogue = function(self: Dialogue): Dialogue?
 
     for _, child in self:getChildren() do
       
@@ -90,7 +90,7 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
   end;
 
-  local function getNextVerifiedDialogue(self: Dialogue): Dialogue
+  local getNextVerifiedDialogue = function(self: Dialogue): Dialogue
 
     local nextDialogue = self:findNextVerifiedDialogue();
     assert(nextDialogue, "No verified child found in dialogue.");
@@ -99,41 +99,17 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
   end;
 
-  local function runInitializationAction(self: Dialogue, client: Client): ()
+  local runInitializationAction = properties.runInitializationAction or function() end;
 
-    if properties.runInitializationAction then
+  local runCompletionAction = properties.runCompletionAction or function() end;
 
-      properties.runInitializationAction(self, client);
+  local runCleanupAction = properties.runCleanupAction or function(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
 
-    end;
-
-  end;
-
-  local function runCompletionAction(self: Dialogue, client: Client): ()
-
-    if properties.runCompletionAction then
-
-      properties.runCompletionAction(self, client);
-
-    end;
+    self:runDefaultCleanupAction(client, requestedDialogue);
 
   end;
 
-  local function runCleanupAction(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
-
-    if properties.runCleanupAction then
-
-      properties.runCleanupAction(self, client, requestedDialogue);
-
-    else
-
-      self:runDefaultCleanupAction(client, requestedDialogue);
-
-    end;
-
-  end;
-
-  local function runDefaultCleanupAction(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
+  local runDefaultCleanupAction = function(self: Dialogue, client: Client, requestedDialogue: Dialogue?): ()
 
     local nextDialogue = requestedDialogue or self:findNextVerifiedDialogue();
     if nextDialogue then
@@ -150,7 +126,7 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
   end;
 
-  local function getContent(self: Dialogue): Page
+  local getContent = function(self: Dialogue): Page
     
     if content then
 
@@ -172,7 +148,7 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
   end;
 
-  local function getParent(self: Dialogue): Dialogue | Conversation
+  local getParent = function(self: Dialogue): Dialogue | Conversation
 
     assert(self.parent, "[Dialogue Maker] Dialogue is missing a parent property.");
 
@@ -180,19 +156,13 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
   end;
 
-  local function verifyCondition(self: Dialogue): boolean
-
-    if properties.verifyCondition then
-
-      return properties.verifyCondition(self);
-
-    end;
+  local verifyCondition = properties.verifyCondition or function()
 
     return true;
 
   end;
 
-  local function getConversation(self: Dialogue): Conversation
+  local getConversation = function(self: Dialogue): Conversation
 
     local parent = self:getParent();
 

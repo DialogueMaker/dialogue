@@ -1,0 +1,19 @@
+{
+  "name": "Response",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Response": {
+        "$className": "Folder",
+        "roblox_packages": {
+          "$path": {
+            "optional": "roblox_packages"
+          }
+        },
+        "src": {
+          "$path": "src"
+        }
+      }
+    }
+  }
+}
