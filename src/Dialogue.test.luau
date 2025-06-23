@@ -14,7 +14,7 @@ type Conversation = DialogueMakerTypes.Conversation;
 return {
   describe("Dialogue", {
 
-    it("can shallow clone", function()
+    it("can clone itself", function()
 
       local message = Dialogue.new("", {
         type = "Message" :: "Message"
@@ -23,7 +23,7 @@ return {
       local clonedMessage = message:clone();
 
       expect(clonedMessage.type).toBe(message.type);
-      expect(clonedMessage.settings).toBe(message.settings);
+      expect(clonedMessage.settings).toDeepEqual(message.settings);
       expect(clonedMessage.runInitializationAction).toBe(message.runInitializationAction);
       expect(clonedMessage.runCleanupAction).toBe(message.runCleanupAction);
       expect(clonedMessage.runCompletionAction).toBe(message.runCompletionAction);
@@ -196,7 +196,7 @@ return {
         type = "Message" :: "Message"
       });
       local mockClient = {
-        clone = function(properties)
+        clone = function(self, properties)
 
           expect(properties.dialogue).toBe(nextDialogue);
           didSucceed = true;

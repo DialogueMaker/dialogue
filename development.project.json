@@ -1,5 +1,5 @@
 {
-  "name": "Response",
+  "name": "Dialogue",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
