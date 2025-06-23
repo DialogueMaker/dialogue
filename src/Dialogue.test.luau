@@ -321,7 +321,7 @@ return {
       
     end);
 
-    it("can error if it can't its conversation", function()
+    it("can error if it can't find its conversation", function()
 
       local parentDialogue = Dialogue.new("Parent", {
         type = "Message" :: "Message";
