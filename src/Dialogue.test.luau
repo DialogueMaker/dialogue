@@ -32,7 +32,7 @@ return {
 
     end);
     
-    it("can get children", function()
+    it("can contain children", function()
   
       local message = Dialogue.new("Parent", {
         type = "Message" :: "Message"
@@ -50,6 +50,43 @@ return {
       expect(#children).toBe(2);
       expect(children[1]:getContent()[1]).toBe("Child 1");
       expect(children[2]:getContent()[1]).toBe("Child 2");
+  
+    end);
+
+    it("can have static content", function()
+    
+      -- Test direct string content.
+      local message = Dialogue.new("This is a static message.", {
+        type = "Message" :: "Message"
+      });
+
+      local content = message:getContent();
+
+      expect(#content).toBe(1);
+      expect(content[1]).toBe("This is a static message.");
+
+      -- How about a table with a single string?
+      message = Dialogue.new({"This is a static message."}, {
+        type = "Message" :: "Message"
+      });
+
+      content = message:getContent();
+
+      expect(#content).toBe(1);
+      expect(content[1]).toBe("This is a static message.");
+
+    end);
+
+    it("can have dynamic content", function()
+  
+      local message = Dialogue.new(function() return {"This is a dynamic message."}; end, {
+        type = "Message" :: "Message"
+      });
+
+      local content = message:getContent();
+
+      expect(#content).toBe(1);
+      expect(content[1]).toBe("This is a dynamic message.");
   
     end);
 
