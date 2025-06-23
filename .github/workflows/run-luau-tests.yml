@@ -20,13 +20,9 @@ jobs:
   build:
     if: ${{ !github.event.pull_request.draft }}
     name: Build testing place
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Build Rojo project
-        uses: dialoguemaker/workflows/.github/workflows/build-rojo-project.yml@main
-        timeout-minutes: 1
-        with:
-          rojo_project_file_name: development.project.json
+    uses: dialoguemaker/workflows/.github/workflows/build-rojo-project.yml@main
+    with:
+      rojo_project_file_name: development.project.json
     
   publish:
     name: Deploy testing place to Roblox
