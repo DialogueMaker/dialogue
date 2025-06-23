@@ -228,46 +228,4 @@ function Dialogue.new(content: DialogueConstructorContent?, properties: Dialogue
 
 end;
 
---[[
-  Returns a list of Dialogue objects from the given instance.
-  The instance should contain ModuleScripts with the "DialogueScript" tag.
-]]
-function Dialogue.listFromInstance(instance: Instance): {Dialogue}
-
-  local dialogueInstances = {};
-
-  for _, child in script:GetChildren() do
-
-    local isDialogueScript = child:IsA("ModuleScript") and child:HasTag("DialogueScript");
-    local isRedirect = child:IsA("ObjectValue") and child:HasTag("DialogueRedirectValue") and child.Value and child.Value:IsA("ModuleScript") and child.Value:HasTag("DialogueScript");
-    if not isDialogueScript and not isRedirect then
-
-      continue;
-
-    end;
-
-    table.insert(dialogueInstances, child);
-
-  end;
-
-  table.sort(dialogueInstances, function(instance1, instance2)
-
-    return instance1.Name < instance2.Name;
-
-  end);
-
-  local dialogueList = {};
-
-  for _, dialogueInstance in dialogueInstances do
-
-    local dialogueScript: ModuleScript = if dialogueInstance:IsA("ModuleScript") then dialogueInstance else dialogueInstance.Value;
-    local dialogue = require(dialogueScript) :: Dialogue;
-    table.insert(dialogueList, dialogue);
-
-  end;
-
-  return dialogueList;
-
-end;
-
 return Dialogue;
