@@ -18,7 +18,7 @@ lib = "src/init.luau"
 build_files = ["src"]
 
 [engines]
-pesde = "^0.7.0-rc.4"
+pesde = "^0.7.0-rc.3"
 lune = "^0.8.9"
 
 [indices]
