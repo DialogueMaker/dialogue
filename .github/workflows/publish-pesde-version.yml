@@ -13,6 +13,7 @@ jobs:
     name: Build project
     runs-on: ubuntu-24.04
     environment: Production
+    timeout-minutes: 1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4.1.7
