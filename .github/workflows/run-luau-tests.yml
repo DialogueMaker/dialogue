@@ -20,9 +20,29 @@ jobs:
   build:
     if: ${{ !github.event.pull_request.draft }}
     name: Build testing place
-    uses: dialoguemaker/workflows/.github/workflows/build-rojo-project.yml@main
-    with:
-      rojo_project_file_name: development.project.json
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Set up pesde
+        uses: ernisto/setup-pesde@5f9a3399d5ae0fe78b014f5f13cd913f27755fb4
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          pesde install
+
+      - name: Build Rojo project
+        run: rojo build development.project.json -o build.rbxl
+
+      - name: Upload project
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: build.rbxl
+          path: build.rbxl
     
   publish:
     name: Deploy testing place to Roblox

@@ -36,7 +36,7 @@ scripts = { name = "pesde/scripts_rojo", version = "^0.1.0", target = "lune" }
 rojo = { name = "pesde/rojo", version = "^7.4.4", target = "lune" }
 luau_lsp = { name = "pesde/luau_lsp", version = "^1.47.0", target = "lune" }
 react-roblox = { wally = "jsdotlua/react-roblox", version = "^17.2.1" }
-ijw = { name = "beastslash/ijw", version = "^1.0.1" }
+ijw = { name = "beastslash/ijw", version = "^1.0.2" }
 
 [peer_dependencies]
 react = { wally = "jsdotlua/react", version = "^17.2.1" }
