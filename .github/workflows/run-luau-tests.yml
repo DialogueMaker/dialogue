@@ -46,7 +46,7 @@ jobs:
   publish:
     name: Deploy testing place to Roblox
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
+    timeout-minutes: 1
     needs: build
     steps:
       - name: Download project
@@ -70,7 +70,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     name: Run test cases
-    timeout-minutes: 2
+    timeout-minutes: 1
     needs: publish
     steps:
       - name: Checkout repository
