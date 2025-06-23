@@ -18,16 +18,14 @@ jobs:
         uses: actions/checkout@v4.1.7
 
       - name: Set up pesde
-        uses: axiom-co/setup-pesde@v0.4.1
+        uses: ernisto/setup-pesde@5f9a3399d5ae0fe78b014f5f13cd913f27755fb4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           token: ${{ secrets.PESDE_TOKEN }}
 
       - name: Install dependencies
-        run: |
-          pesde install
+        run: pesde install
 
       - name: Publish to pesde registry
-        run: |
-          pesde publish -y
+        run: pesde publish -y
